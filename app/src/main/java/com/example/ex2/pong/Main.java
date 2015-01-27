@@ -4,11 +4,8 @@ package com.example.ex2.pong;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
 import android.view.Window;
 
 import sheep.game.Game;
@@ -16,7 +13,6 @@ import sheep.game.Game;
 
 public class Main extends Activity {
 
-    public static int BACKGROUND_COLOR = Color.rgb(254, 0, 254);
     private Game game;
 
     @Override
@@ -33,10 +29,7 @@ public class Main extends Activity {
         game.setOnTouchListener(state);
         // View the game.
         setContentView(game);
-
-
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -50,6 +43,7 @@ public class Main extends Activity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
+        
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
