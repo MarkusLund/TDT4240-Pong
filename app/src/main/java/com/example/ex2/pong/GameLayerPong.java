@@ -41,7 +41,7 @@ public class GameLayerPong extends Layer {
         scoreFont.setTextAlign(Paint.Align.CENTER);
         player1 = new PongPaddle(pong_paddle, 1);
         player2 = new PongPaddle(pong_paddle, 2);
-        ball = new PongBall();
+        ball = PongBall.getInstance();
         ball.setSpeed(3,0);
         ball.setPosition(50,50);
         ySpeed = Util.getRandSpeed(1, 3).getY();

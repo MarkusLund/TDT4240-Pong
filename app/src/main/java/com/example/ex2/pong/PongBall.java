@@ -4,19 +4,16 @@ import sheep.game.Sprite;
 import sheep.graphics.Image;
 
 public class PongBall extends Sprite {
-    private static PongBall ourInstance ;
+    private static final Image img = new Image(R.drawable.pong_ball);
+    private static final PongBall INSTANCE = new PongBall(img);
+
+     private PongBall(Image img) {
+         super(img);
+    }
+
     public static PongBall getInstance() {
-        return ourInstance;
+        return INSTANCE;
     }
-    private static Image img = new Image(R.drawable.pong_ball);
-
-    public PongBall() {
-        super(img);
-        ourInstance = this;
-        this.setPosition(100,100);
-
-    }
-
     public static float getHeight() {
         return img.getHeight();
     }
