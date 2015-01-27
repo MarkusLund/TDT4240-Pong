@@ -19,15 +19,17 @@ public class ScoreSystem extends Observable{
     }
 
     public void addOnePoint(int player){
-        Log.i("addOnePoint", String.valueOf(player));
         if (player == 1){
             p1++;
         }else{
             p2++;
         }
         if (p1 >= winScore){
+            setChanged();
             notifyObservers(1);
-        }else{
+        }
+        if (p2 >=winScore){
+            setChanged();
             notifyObservers(2);
         }
     }
@@ -39,4 +41,10 @@ public class ScoreSystem extends Observable{
     public int getP2Score() {
         return p2;
     }
+
+    public void resetScore(){
+        p1 = 0;
+        p2 = 0;
+    }
+
 }
