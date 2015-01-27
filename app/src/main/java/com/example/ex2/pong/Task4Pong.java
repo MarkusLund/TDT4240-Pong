@@ -2,6 +2,7 @@ package com.example.ex2.pong;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -11,7 +12,7 @@ import sheep.game.World;
 /**
  * Created by markuslund92 on 27.01.15.
  */
-public class Task4Pong extends State implements View.OnTouchListener{
+public class Task4Pong extends State implements View.OnTouchListener {
 
     private World gameWorld;
     private GameLayerPong gameLayer;
@@ -40,5 +41,4 @@ public class Task4Pong extends State implements View.OnTouchListener{
         this.gameLayer.onTouch(v, event);
         return false;
     }
-
 }

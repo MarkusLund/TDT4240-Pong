@@ -4,8 +4,11 @@ package com.example.ex2.pong;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.Window;
 
 import sheep.game.Game;
@@ -25,8 +28,9 @@ public class Main extends Activity {
         // Create the game.
         game = new Game(this, null);
         // Push the main state.
-        game.pushState(new Task4Pong());
-
+        Task4Pong state = new Task4Pong();
+        game.pushState(state);
+        game.setOnTouchListener(state);
         // View the game.
         setContentView(game);
 
@@ -60,6 +64,4 @@ public class Main extends Activity {
 */
         return super.onOptionsItemSelected(item);
     }
-
-
 }
