@@ -7,6 +7,9 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.Observable;
+import java.util.Observer;
+
 import sheep.game.Layer;
 import sheep.graphics.Color;
 import sheep.graphics.Font;
@@ -16,7 +19,7 @@ import sheep.math.BoundingBox;
 /**
  * Created by markuslund92 on 27.01.15.
  */
-public class GameLayerPong extends Layer {
+public class GameLayerPong extends Layer implements Observer {
 
     private PongPaddle player1, player2;
     private PongBall ball;
@@ -25,17 +28,22 @@ public class GameLayerPong extends Layer {
     private int canvasWidth, canvasHeight;
     private float dt, ySpeed;
     private Font scoreFont;
-    private static int p1Score, p2Score, winningScore;
-    private boolean gameWon;
+    private int gameWon;
+    private ScoreSystem scoreSystem;
+    private int winningScore = 3;
 
     public GameLayerPong() {
         init = true;
         pong_paddle = new Image(R.drawable.pong_paddle);
 
-        p1Score = 0;
-        p2Score = 0;
-        winningScore = 21;
-        gameWon = false;
+        scoreSystem = new ScoreSystem(winningScore);
+        scoreSystem.addObserver(this);
+
+        //p1Score = 0;
+        //p2Score = 0;
+        //winningScore = 21;
+
+        gameWon = -1;
 
         scoreFont = new Font(255, 255, 255, 50, Typeface.MONOSPACE, Typeface.NORMAL);
         scoreFont.setTextAlign(Paint.Align.CENTER);
@@ -52,7 +60,7 @@ public class GameLayerPong extends Layer {
     @Override
     public void update(float v) {
 
-        if (!gameWon){
+        if (gameWon == -1){
             Util.moveSprite(player1);
             Util.moveSprite(player2);
             Util.moveSprite(ball);
@@ -97,15 +105,11 @@ public class GameLayerPong extends Layer {
             }
             //check if someone has scored
             if( ball.getPosition().getX()<0){
-                addP2Score();
+                scoreSystem.addOnePoint(2);
                 resetBall();
             }else if(ball.getPosition().getX()>canvasWidth){
-                addP1Score();
+                scoreSystem.addOnePoint(1);
                 resetBall();
-            }
-
-            if(p1Score >= winningScore || p2Score >= winningScore){
-                gameWon = true;
             }
 
             dt+=v;
@@ -129,21 +133,15 @@ public class GameLayerPong extends Layer {
         ball.setSpeed(xSpeed, Util.getRandInt(-3, 3));
     }
 
-    private void addP1Score() {
-        p1Score++;
-    }
-
-    private void addP2Score() {
-        p2Score++;
-    }
-
     @Override
     public void draw(Canvas canvas, BoundingBox boundingBox) {
-        canvas.drawText(String.valueOf(getP1Score()), -50 + canvasWidth / 2, 100, scoreFont);
-        canvas.drawText(String.valueOf(getP2Score()), 50 + canvasWidth / 2, 100, scoreFont);
 
-        if (gameWon){
-            if (getP1Score() > getP2Score()){
+        //Draws score
+        canvas.drawText(String.valueOf(scoreSystem.getP1Score()), -50 + canvasWidth / 2, 100, scoreFont);
+        canvas.drawText(String.valueOf(scoreSystem.getP2Score()), 50 + canvasWidth / 2, 100, scoreFont);
+
+        if (gameWon > 0){
+            if (gameWon == 1){
                 canvas.drawText("Player 1 won!", canvasWidth / 2, 300, scoreFont);
             }else{
                 canvas.drawText("Player 2 won!", canvasWidth / 2, 300, scoreFont);
@@ -184,8 +182,9 @@ public class GameLayerPong extends Layer {
             player1.setPosition(80, canvasHeight / 2);
             player2.setPosition(canvasWidth - 80, canvasHeight / 2);
             ball.setPosition(canvasWidth/2, canvasHeight/2);
-            p1Score = 0;
-            p2Score = 0;
+
+            scoreSystem = new ScoreSystem(winningScore);
+
             ySpeed = Util.getRandSpeed(1, 5).getY();
             init = false;
         }
@@ -225,10 +224,9 @@ public class GameLayerPong extends Layer {
 
                 case MotionEvent.ACTION_UP:
                     Log.i("Touch", "Action up");
-                    if (gameWon){
-                        p1Score = 0;
-                        p2Score = 0;
-                        gameWon = false;
+                    if (gameWon > 0){
+                        scoreSystem = new ScoreSystem(winningScore);
+                        gameWon = -1;
                         Log.i("gameWon", "Set to false after action up");
                     }
                     break;
@@ -240,11 +238,9 @@ public class GameLayerPong extends Layer {
         }
     }
 
-    public int getP2Score() {
-        return p2Score;
-    }
-
-    public int getP1Score() {
-        return p1Score;
+    @Override
+    public void update(Observable observable, Object data) {
+        Log.i("Observer fire", data.toString());
+        gameWon = (int)data;
     }
 }
