@@ -7,6 +7,9 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.Observable;
+import java.util.Observer;
+
 import sheep.game.Layer;
 import sheep.graphics.Color;
 import sheep.graphics.Font;
@@ -16,34 +19,35 @@ import sheep.math.BoundingBox;
 /**
  * Created by markuslund92 on 27.01.15.
  */
-public class GameLayerPong extends Layer {
+public class GameLayerPong extends Layer implements Observer {
 
-    private PongPaddle player1, player2;
-    private PongBall ball;
+    private final PongPaddle player1;
+    private final PongPaddle player2;
+    private final PongBall ball;
     private Boolean init;
-    private Image pong_paddle;
     private int canvasWidth, canvasHeight;
     private float dt, ySpeed;
-    private Font scoreFont;
-    private static int p1Score, p2Score, winningScore;
-    private boolean gameWon;
+    private final Font scoreFont;
+    private int gameWon;
+    private final ScoreSystem scoreSystem;
 
     public GameLayerPong() {
         init = true;
-        pong_paddle = new Image(R.drawable.pong_paddle);
+        Image pong_paddle = new Image(R.drawable.pong_paddle);
 
-        p1Score = 0;
-        p2Score = 0;
-        winningScore = 21;
-        gameWon = false;
+        int winningScore = 21;
+        scoreSystem = new ScoreSystem(winningScore);
+        scoreSystem.addObserver(this);
+
+        gameWon = -1;
 
         scoreFont = new Font(255, 255, 255, 50, Typeface.MONOSPACE, Typeface.NORMAL);
         scoreFont.setTextAlign(Paint.Align.CENTER);
         player1 = new PongPaddle(pong_paddle, 1);
         player2 = new PongPaddle(pong_paddle, 2);
         ball = PongBall.getInstance();
-        ball.setSpeed(3,0);
-        ball.setPosition(50,50);
+        ball.setSpeed(3, 0);
+        ball.setPosition(50, 50);
         ySpeed = Util.getRandSpeed(1, 3).getY();
 
     }
@@ -52,7 +56,7 @@ public class GameLayerPong extends Layer {
     @Override
     public void update(float v) {
 
-        if (!gameWon){
+        if (gameWon == -1) {
             Util.moveSprite(player1);
             Util.moveSprite(player2);
             Util.moveSprite(ball);
@@ -66,25 +70,21 @@ public class GameLayerPong extends Layer {
                 }
 
                 //Bounce roof/floor
-                if(ball.getPosition().getY()<(10+ball.getHeight()/2) || ball.getPosition().getY()>canvasHeight-10-ball.getHeight()/2){
-                    ball.setSpeed(ball.getSpeed().getX(),-ball.getSpeed().getY());
-                    dt=0;
+                if (ball.getPosition().getY() < (10 + ball.getHeight() / 2) || ball.getPosition().getY() > canvasHeight - 10 - ball.getHeight() / 2) {
+                    ball.setSpeed(ball.getSpeed().getX(), -ball.getSpeed().getY());
+                    dt = 0;
                 }
             }
             //check if someone has scored
-            if( ball.getPosition().getX()<0){
-                addP2Score();
+            if (ball.getPosition().getX() < 0) {
+                scoreSystem.addOnePoint(2);
                 resetBall();
-            }else if(ball.getPosition().getX()>canvasWidth){
-                addP1Score();
+            } else if (ball.getPosition().getX() > canvasWidth) {
+                scoreSystem.addOnePoint(1);
                 resetBall();
             }
 
-            if(p1Score >= winningScore || p2Score >= winningScore){
-                gameWon = true;
-            }
-
-            dt+=v;
+            dt += v;
             player1.update(v);
             player2.update(v);
             ball.update(v);
@@ -112,35 +112,29 @@ public class GameLayerPong extends Layer {
     private void resetBall() {
         ball.setPosition(canvasWidth / 2, canvasHeight / 2);
         float xSpeed;
-        if(java.lang.Math.abs(-ball.getSpeed().getX())<3){
+        if (java.lang.Math.abs(-ball.getSpeed().getX()) < 3) {
             xSpeed = -ball.getSpeed().getX();
-        }else{
-            xSpeed = -ball.getSpeed().getX()/2;
+        } else {
+            xSpeed = -ball.getSpeed().getX() / 2;
         }
         ball.setSpeed(xSpeed, Util.getRandInt(-3, 3));
     }
 
-    private void addP1Score() {
-        p1Score++;
-    }
-
-    private void addP2Score() {
-        p2Score++;
-    }
-
     @Override
     public void draw(Canvas canvas, BoundingBox boundingBox) {
-        canvas.drawText(String.valueOf(getP1Score()), -50 + canvasWidth / 2, 100, scoreFont);
-        canvas.drawText(String.valueOf(getP2Score()), 50 + canvasWidth / 2, 100, scoreFont);
 
-        if (gameWon){
-            if (getP1Score() > getP2Score()){
+        //Draws score
+        canvas.drawText(String.valueOf(scoreSystem.getP1Score()), -50 + canvasWidth / 2, 100, scoreFont);
+        canvas.drawText(String.valueOf(scoreSystem.getP2Score()), 50 + canvasWidth / 2, 100, scoreFont);
+
+        if (gameWon > 0) {
+            if (gameWon == 1) {
                 canvas.drawText("Player 1 won!", canvasWidth / 2, 300, scoreFont);
-            }else{
+            } else {
                 canvas.drawText("Player 2 won!", canvasWidth / 2, 300, scoreFont);
             }
             canvas.drawText("Touch to start a new game.", canvasWidth / 2, 400, scoreFont);
-        }else{
+        } else {
             player1.draw(canvas);
             player2.draw(canvas);
             ball.draw(canvas);
@@ -150,7 +144,6 @@ public class GameLayerPong extends Layer {
                 canvas.drawRect(canvasWidth / 2 - 3, i, canvasWidth / 2 + 3, i + 10, Color.WHITE);
             }
         }
-
 
 
         //DRAWS GAME AREA
@@ -174,9 +167,11 @@ public class GameLayerPong extends Layer {
             canvasHeight = canvas.getHeight();
             player1.setPosition(80, canvasHeight / 2);
             player2.setPosition(canvasWidth - 80, canvasHeight / 2);
-            ball.setPosition(canvasWidth/2, canvasHeight/2);
-            p1Score = 0;
-            p2Score = 0;
+            ball.setPosition(canvasWidth / 2, canvasHeight / 2);
+
+            scoreSystem.resetScore();
+
+
             ySpeed = Util.getRandSpeed(1, 5).getY();
             init = false;
         }
@@ -205,22 +200,20 @@ public class GameLayerPong extends Layer {
                 case MotionEvent.ACTION_MOVE:
                     //Move player1
                     if (X < canvasWidth / 2) {
-                        player1.setPosition(player1.getPosition().getX(),Y);
+                        player1.setPosition(player1.getPosition().getX(), Y);
                     }
 
                     //Move player2
                     if (X > canvasWidth / 2) {
-                        player2.setPosition(player2.getPosition().getX(),Y);
+                        player2.setPosition(player2.getPosition().getX(), Y);
                     }
                     break;
 
                 case MotionEvent.ACTION_UP:
                     Log.i("Touch", "Action up");
-                    if (gameWon){
-                        p1Score = 0;
-                        p2Score = 0;
-                        gameWon = false;
-                        Log.i("gameWon", "Set to false after action up");
+                    if (gameWon > 0) {
+                        gameWon = -1;
+                        scoreSystem.resetScore();
                     }
                     break;
 
@@ -231,11 +224,8 @@ public class GameLayerPong extends Layer {
         }
     }
 
-    public int getP2Score() {
-        return p2Score;
-    }
-
-    public int getP1Score() {
-        return p1Score;
+    @Override
+    public void update(Observable observable, Object data) {
+        gameWon = (int) data;
     }
 }
